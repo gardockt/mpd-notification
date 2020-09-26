@@ -86,6 +86,8 @@ look like this:
     oneline = true
     scale = 200
     timeout = 20
+    text-topic = MPD Notification
+    text-stop = Stopped playback
 
 Unused options can be commented or removed completely.
 

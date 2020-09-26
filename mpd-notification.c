@@ -228,6 +228,7 @@ int main(int argc, char ** argv) {
 	GError * error = NULL;
 	enum mpd_state state = MPD_STATE_UNKNOWN, last_state = MPD_STATE_UNKNOWN;
 	const char * mpd_host, * mpd_port_str, * music_dir, * uri = NULL;
+	const char * text_topic = TEXT_TOPIC, * text_stop = TEXT_STOP;
 	unsigned mpd_port = MPD_PORT, mpd_timeout = MPD_TIMEOUT, notification_timeout = NOTIFICATION_TIMEOUT;
 	struct mpd_song * song = NULL;
 	unsigned int i, version = 0, help = 0, scale = 0, file_workaround = 0;
@@ -255,6 +256,8 @@ int main(int argc, char ** argv) {
 		notification_timeout = iniparser_getint(ini, ":timeout", notification_timeout);
 		oneline = iniparser_getboolean(ini, ":oneline", oneline);
 		scale = iniparser_getint(ini, ":scale", scale);
+		text_topic = iniparser_getstring(ini, ":text-topic", TEXT_TOPIC);
+		text_stop = iniparser_getstring(ini, ":text-stop", TEXT_STOP);
 	}
 
 	/* get the verbose status */
@@ -372,9 +375,9 @@ int main(int argc, char ** argv) {
 
 	notification =
 #		if NOTIFY_CHECK_VERSION(0, 7, 0)
-		notify_notification_new(TEXT_TOPIC, TEXT_NONE, ICON_AUDIO_X_GENERIC);
+		notify_notification_new(text_topic, TEXT_NONE, ICON_AUDIO_X_GENERIC);
 #		else
-		notify_notification_new(TEXT_TOPIC, TEXT_NONE, ICON_AUDIO_X_GENERIC, NULL);
+		notify_notification_new(text_topic, TEXT_NONE, ICON_AUDIO_X_GENERIC, NULL);
 #		endif
 	notify_notification_set_category(notification, PROGNAME);
 	notify_notification_set_urgency(notification, NOTIFY_URGENCY_NORMAL);
@@ -402,7 +405,7 @@ int main(int argc, char ** argv) {
 			 * too late, which results in issue with image date. Make sure to
 			 * show a notification without image data (just generic icon) first. */
 			if (last_state != MPD_STATE_PLAY) {
-				notify_notification_update(notification, TEXT_TOPIC, "Starting playback...", ICON_AUDIO_X_GENERIC);
+				notify_notification_update(notification, text_topic, "Starting playback...", ICON_AUDIO_X_GENERIC);
 				notify_notification_show(notification, NULL);
 			}
 
@@ -458,9 +461,9 @@ int main(int argc, char ** argv) {
 
 			mpd_song_free(song);
 		} else if (state == MPD_STATE_STOP) {
-			notifystr = strdup(TEXT_STOP);
+			notifystr = strdup(text_stop);
 #ifdef HAVE_SYSTEMD
-			sd_notify(0, "READY=1\nSTATUS=" TEXT_STOP);
+			sd_notifyf(0, "READY=1\nSTATUS=%s", text_stop);
 #endif
 		} else
 			notifystr = strdup(TEXT_UNKNOWN);
@@ -475,9 +478,9 @@ int main(int argc, char ** argv) {
 		if (file_workaround > 0 && pixbuf != NULL) {
 			gdk_pixbuf_save(pixbuf, "/tmp/.mpd-notification-artwork.png", "png", NULL, NULL);
 
-			notify_notification_update(notification, TEXT_TOPIC, notifystr, "/tmp/.mpd-notification-artwork.png");
+			notify_notification_update(notification, text_topic, notifystr, "/tmp/.mpd-notification-artwork.png");
 		} else
-			notify_notification_update(notification, TEXT_TOPIC, notifystr, ICON_AUDIO_X_GENERIC);
+			notify_notification_update(notification, text_topic, notifystr, ICON_AUDIO_X_GENERIC);
 
 		/* Call this unconditionally! When pixbuf is NULL this clears old image. */
 		notify_notification_set_image_from_pixbuf(notification, pixbuf);
