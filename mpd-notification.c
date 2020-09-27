@@ -425,7 +425,7 @@ int main(int argc, char ** argv) {
 
 			/* initial allocation and string termination */
 			notifystr = strdup("");
-			notifystr = append_string(notifystr, TEXT_PLAY_PAUSE_STATE, 0, state == MPD_STATE_PLAY ? "Playing": "Paused");
+			notifystr = append_string(notifystr, TEXT_PLAY_PAUSE_STATE, 0, state == MPD_STATE_PLAY ? TEXT_PLAY : TEXT_PAUSE);
 			notifystr = append_string(notifystr, TEXT_PLAY_PAUSE_TITLE, 0, title);
 
 			if ((artist = mpd_song_get_tag(song, MPD_TAG_ARTIST, 0)) != NULL)
