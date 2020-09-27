@@ -88,6 +88,9 @@ look like this:
     timeout = 20
     text-topic = MPD Notification
     text-stop = Stopped playback
+	text-play-pause-title = <b>%s</b>
+	text-play-pause-artist = by <i>%s</i>
+	text-play-pause-album = from <i>%s</i>
 
 Unused options can be commented or removed completely.
 

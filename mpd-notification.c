@@ -35,6 +35,35 @@ uint8_t oneline = 0;
 	magic_t magic = NULL;
 #endif
 
+/*** string_arg_count ***/
+unsigned int string_arg_count(const char* text) {
+	int count = 0;
+
+	for(int i = 0; i < strlen(text) - 1; i++) {
+		if(text[i] == '%') {
+			switch(text[i + 1]) {
+				case 's':
+					count++;
+				case '%':
+					i++;
+					break;
+				default:
+					return (unsigned int)(-1);
+			}
+		}
+	}
+	return count;
+}
+
+/*** check_string_arg_count ***/
+void check_string_arg_count(const char** text, int expected, const char* defaultVal) {
+	if(string_arg_count(*text) > expected) {
+		fprintf(stderr, "Warning: \"%s\" has too much string arguments, setting default (%s)\n", *text, defaultVal);
+		*text = defaultVal;
+	}
+}
+
+
 /*** received_signal ***/
 void received_signal(int signal) {
 	GError * error = NULL;
@@ -228,7 +257,7 @@ int main(int argc, char ** argv) {
 	GError * error = NULL;
 	enum mpd_state state = MPD_STATE_UNKNOWN, last_state = MPD_STATE_UNKNOWN;
 	const char * mpd_host, * mpd_port_str, * music_dir, * uri = NULL;
-	const char * text_topic = TEXT_TOPIC, * text_stop = TEXT_STOP;
+	const char * text_topic = TEXT_TOPIC, * text_stop = TEXT_STOP, * text_play_pause_title = TEXT_PLAY_PAUSE_TITLE, * text_play_pause_artist = TEXT_PLAY_PAUSE_ARTIST, * text_play_pause_album = TEXT_PLAY_PAUSE_ALBUM;
 	unsigned mpd_port = MPD_PORT, mpd_timeout = MPD_TIMEOUT, notification_timeout = NOTIFICATION_TIMEOUT;
 	struct mpd_song * song = NULL;
 	unsigned int i, version = 0, help = 0, scale = 0, file_workaround = 0;
@@ -258,6 +287,14 @@ int main(int argc, char ** argv) {
 		scale = iniparser_getint(ini, ":scale", scale);
 		text_topic = iniparser_getstring(ini, ":text-topic", TEXT_TOPIC);
 		text_stop = iniparser_getstring(ini, ":text-stop", TEXT_STOP);
+		text_play_pause_title = iniparser_getstring(ini, ":text-play-pause-title", TEXT_PLAY_PAUSE_TITLE);
+		text_play_pause_artist = iniparser_getstring(ini, ":text-play-pause-artist", TEXT_PLAY_PAUSE_ARTIST);
+		text_play_pause_album = iniparser_getstring(ini, ":text-play-pause-album", TEXT_PLAY_PAUSE_ALBUM);
+
+		/* check string argument count */
+		check_string_arg_count(&text_play_pause_title, 1, TEXT_PLAY_PAUSE_TITLE);
+		check_string_arg_count(&text_play_pause_artist, 1, TEXT_PLAY_PAUSE_ARTIST);
+		check_string_arg_count(&text_play_pause_album, 1, TEXT_PLAY_PAUSE_ALBUM);
 	}
 
 	/* get the verbose status */
@@ -426,13 +463,13 @@ int main(int argc, char ** argv) {
 			/* initial allocation and string termination */
 			notifystr = strdup("");
 			notifystr = append_string(notifystr, TEXT_PLAY_PAUSE_STATE, 0, state == MPD_STATE_PLAY ? TEXT_PLAY : TEXT_PAUSE);
-			notifystr = append_string(notifystr, TEXT_PLAY_PAUSE_TITLE, 0, title);
+			notifystr = append_string(notifystr, text_play_pause_title, 0, title);
 
 			if ((artist = mpd_song_get_tag(song, MPD_TAG_ARTIST, 0)) != NULL)
-				notifystr = append_string(notifystr, TEXT_PLAY_PAUSE_ARTIST, oneline ? ' ' : '\n', artist);
+				notifystr = append_string(notifystr, text_play_pause_artist, oneline ? ' ' : '\n', artist);
 
 			if ((album = mpd_song_get_tag(song, MPD_TAG_ALBUM, 0)) != NULL)
-				notifystr = append_string(notifystr, TEXT_PLAY_PAUSE_ALBUM, oneline ? ' ' : '\n', album);
+				notifystr = append_string(notifystr, text_play_pause_album, oneline ? ' ' : '\n', album);
 
 			uri = mpd_song_get_uri(song);
 
